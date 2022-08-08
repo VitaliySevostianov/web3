@@ -1,23 +1,49 @@
-import logo from './logo.svg';
+import React, {useEffect, useState} from 'react';
 import './App.css';
 
+const ethereum = window.ethereum
+
 function App() {
+  
+  const [userAccount, setUserAccount] = useState(ethereum.selectedAddress)
+  const [currentBalance, setCurrentBalance] = useState(0)
+
+  useEffect(() => {
+    ethereum.on('accountsChanged', async () => {
+      const balance = await ethereum.request({ method: 'eth_getBalance', params: [ethereum.selectedAddress, 'latest'], });
+      const code = await ethereum.request({ method: 'eth_getCode', params: [ethereum.selectedAddress, 'latest'], });
+      console.log((parseInt(balance,16) * Math.pow(10,(-18))), code)
+      setCurrentBalance(parseInt(balance,16) * Math.pow(10,(-18)))
+    });
+    
+    return ethereum.removeListener('accountsChanged', () => {});
+  }, [])
+
+
+
+  useEffect(() => {
+    if(typeof ethereum.selectedAddress !== 'string') return
+      (async () => {
+
+        const balance = await ethereum.request({ method: 'eth_getBalance', params: [ethereum.selectedAddress, 'latest'], });
+        const code = await ethereum.request({ method: 'eth_getCode', params: [ethereum.selectedAddress, 'latest'], });
+        console.log((parseInt(balance,16) * Math.pow(10,(-18))), code)
+        setCurrentBalance(parseInt(balance,16) * Math.pow(10,(-18)))
+      })()
+  }, [ethereum.selectedAddress])
+
+  const ethRequest = async () => {
+    if (typeof ethereum !== 'undefined') {
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      setUserAccount(accounts)
+    }
+  }
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <button onClick={ethRequest} style={{width: "100px", height: "50px"}}>Connect Account</button>
+      <h2>Account Address: <span>{ethereum.selectedAddress}</span></h2>
+      <h2>Balance: <span>{currentBalance}</span></h2>
+
     </div>
   );
 }
